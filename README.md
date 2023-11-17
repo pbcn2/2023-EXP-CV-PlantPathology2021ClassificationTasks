@@ -136,7 +136,7 @@ Swin Transformer的思想比较容易理解，如下图所示，ViT(Vision Trans
 
 #### 整体架构
 
-![](E:/001CV/2023-EXP-CV-PlantPathology2021ClassificationTasks/imgs_for_README/total.png)
+![](imgs_for_README/total.png)
 
 #### Patch Partion
 
