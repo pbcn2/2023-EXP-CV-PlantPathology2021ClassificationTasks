@@ -3,6 +3,7 @@ from pytorch_grad_cam import GradCAM
 from pytorch_grad_cam.utils.image import show_cam_on_image
 from models import build_model
 import cv2
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -48,18 +49,19 @@ def parse_option():
 
     return args, config
 
+
 # 配置网络
 args, config = parse_option()
 model = build_model(config)
 model.to("cpu")
-checkpoint = torch.load("/hy-tmp/output/swin_tiny_patch4_window7_224/default/ckpt_epoch_99.pth", map_location=torch.device('cpu'))
+checkpoint = torch.load("/hy-tmp/output/swin_tiny_patch4_window7_224/default/ckpt_epoch_299.pth", map_location=torch.device('cpu'))
 model.load_state_dict({k.replace('module.', ''): v for k, v in checkpoint['model'].items()})
 model.eval()
 # print(model)
 
 # 获取特征图的层
-target_layer = [model.layers[-1].blocks[-1].norm1]
-
+target_layer = [model.layers[-1].blocks[-1].norm2]
+# [model.blocks[-1].norm1]
 # transformer特殊需要
 def reshape_transform(tensor, height=7, width=7):
     result = tensor.reshape(tensor.size(0),
@@ -81,9 +83,22 @@ def img_process(rgb_img_dir):
 # 创建 Grad-CAM 对象
 cam = GradCAM(model=model, target_layers=target_layer, reshape_transform=reshape_transform)
 
-# 图像和类别
-image_paths = ["dataset/test/000001/80c43018ef70fef7.jpg", "dataset/test/000001/80c5d3895739ff50.jpg"] 
-class_ids = [0, 0]  # 对应的类别索引
+# 图像和类别 - 替换为您的图像和类别
+# image_paths = ["/Swin-Transformer/dataset/test/010000/839e978ed69e7808.jpg"]  # 替换为您的图像路径
+# image_paths = ["/Swin-Transformer/dataset/test/000001/80c5d3895739ff50.jpg"]  # 替换为您的图像路径
+# image_paths = ["/Swin-Transformer/dataset/test/000010/84d7fe5c7c0c43c2.jpg"]  # 替换为您的图像路径
+
+image_paths = ["/Swin-Transformer/dataset/test/000100/80bcfd9f60f06307.jpg"]  # 替换为您的图像路径
+# image_paths = ["/Swin-Transformer/dataset/train/000001/ec60fc9fc1c11bc1.jpg"]  # 替换为您的图像路径
+
+class_ids = [2]  # 替换为对应的类别索引
+
+# dir_path = "visual/010000-839e978ed69e7808.jpg"
+# dir_path = "visual/000001-80c5d3895739ff50.jpg"
+dir_path = "visual/000100-80bcfd9f60f06307.jpg"
+# dir_path = "visual/double_tag"
+
+os.makedirs(dir_path, exist_ok=True)
 
 # 可视化
 for image_path, class_id in zip(image_paths, class_ids):
@@ -99,26 +114,22 @@ for image_path, class_id in zip(image_paths, class_ids):
     # 转换为 uint8 并应用颜色映射
     heatmap = cv2.applyColorMap(np.uint8(255 * grayscale_cam), cv2.COLORMAP_JET)
 
+    # 叠加热图
     # 加载原始图像
     rgb_img = cv2.imread(image_path, cv2.IMREAD_COLOR)
     rgb_img = cv2.cvtColor(rgb_img, cv2.COLOR_BGR2RGB)
     rgb_img = cv2.resize(rgb_img, (224, 224))
     
-    # 叠加热图
+    cv2.imwrite(os.path.join(dir_path, "orignal_img.jpg"), rgb_img)
+    
     heatmap = np.float32(heatmap) / 255
     cam_image = heatmap + np.float32(rgb_img / 255)
     cam_image = cam_image / np.max(cam_image)
 
+    # 显示和保存结果
+    plt.imshow(cam_image)
+    plt.show()
     
-    # visualization = show_cam_on_image(rgb_img / 255.0, grayscale_cam)
-    # cv2.imwrite("cam_image.jpg", visualization)
+    visualization = show_cam_on_image(rgb_img / 255.0, grayscale_cam)
 
-
-    # 创建一个画布，其宽度是原图宽度的两倍
-    combined_image = np.zeros((224, 224 * 2, 3), dtype=np.uint8)
-
-    # 将原图和热力图放置在画布的左右两边
-    combined_image[:, :224, :] = rgb_img
-    combined_image[:, 224:, :] = np.uint8(255 * cam_image)
-
-    cv2.imwrite("combined_image.jpg", cv2.cvtColor(combined_image, cv2.COLOR_RGB2BGR))
+    cv2.imwrite(os.path.join(dir_path, "cam_image.jpg"), visualization)

@@ -10,10 +10,10 @@
 操作系统:  Linux 18.04
 Pytorch:  1.7.1
 CUDA:     10.1.243 版本（使用 nvcc --version 查看）
-GPU：     显存8G
+GPU：     NVIDIA Tesla P40 24G
 ```
 
-在根目录下上载`Swin-Transformer-hw.zip`并解压 （`unzip Swin-Transformer-hw.zip`）
+在根目录下上载`Swin-Transformer-pbcn2.zip`并解压 （`unzip Swin-Transformer-hw.zip`）
 
 ```
 cd Swin-Transformer
@@ -254,7 +254,101 @@ I:.
 
 这个文件夹中就是模型运行的时候实际使用的数据集，是一个ImageNet格式的标准数据集
 
+#### 数据集增强
+
+可以使用以下代码对数据集进行增强
+
+```python
+
+# ###
+# 本代码共采用了四种数据增强，如采用其他数据增强方式，可以参考本代码，随意替换。
+# imageDir 为原数据集的存放位置
+# saveDir  为数据增强后数据的存放位置
+# ###
+
+def flip(root_path,img_name):   #翻转图像
+    img = Image.open(os.path.join(root_path, img_name))
+    filp_img = img.transpose(Image.FLIP_LEFT_RIGHT)
+    # filp_img.save(os.path.join(root_path,img_name.split('.')[0] + '_flip.jpg'))
+    return filp_img
+
+def rotation(root_path, img_name):
+    img = Image.open(os.path.join(root_path, img_name))
+    rotation_img = img.rotate(20) #旋转角度
+    # rotation_img.save(os.path.join(root_path,img_name.split('.')[0] + '_rotation.jpg'))
+    return rotation_img
+
+def randomColor(root_path, img_name): 
+    """
+    对图像进行颜色抖动
+    :param image: PIL的图像image
+    :return: 有颜色色差的图像image
+    """
+    image = Image.open(os.path.join(root_path, img_name))
+    random_factor = np.random.randint(0, 31) / 10.  # 随机因子
+    color_image = ImageEnhance.Color(image).enhance(random_factor)  # 调整图像的饱和度
+    random_factor = np.random.randint(10, 21) / 10.  # 随机因子
+    brightness_image = ImageEnhance.Brightness(color_image).enhance(random_factor)  # 调整图像的亮度
+    random_factor = np.random.randint(10, 21) / 10.  # 随机因子
+    contrast_image = ImageEnhance.Contrast(brightness_image).enhance(random_factor)  # 调整图像对比度
+    random_factor = np.random.randint(0, 31) / 10.  # 随机因子
+    return ImageEnhance.Sharpness(contrast_image).enhance(random_factor)  # 调整图像锐度
+
+
+def contrastEnhancement(root_path, img_name):  # 对比度增强
+    image = Image.open(os.path.join(root_path, img_name))
+    enh_con = ImageEnhance.Contrast(image)
+    contrast = 1.5
+    image_contrasted = enh_con.enhance(contrast)
+    return image_contrasted
+
+def brightnessEnhancement(root_path,img_name):#亮度增强
+    image = Image.open(os.path.join(root_path, img_name))
+    enh_bri = ImageEnhance.Brightness(image)
+    brightness = 1.5
+    image_brightened = enh_bri.enhance(brightness)
+    return image_brightened
+
+def colorEnhancement(root_path,img_name):#颜色增强
+    image = Image.open(os.path.join(root_path, img_name))
+    enh_col = ImageEnhance.Color(image)
+    color = 1.5
+    image_colored = enh_col.enhance(color)
+    return image_colored
+
+
+import numpy as np
+from PIL import Image
+from PIL import ImageEnhance
+import os
+import cv2
+imageDir="dataset/train/100000"     #要改变的图片的路径文件夹
+saveDir="dataset/train/new-100000"   #要保存的图片的路径文件夹
+
+for name in os.listdir(imageDir):
+
+    saveName= name[:-4]+"id.jpg"
+    image = Image.open(os.path.join(imageDir, name))
+    image.save(os.path.join(saveDir,saveName))
+
+    saveName= name[:-4]+"be.jpg"
+    saveImage=brightnessEnhancement(imageDir,name)
+    saveImage.save(os.path.join(saveDir,saveName))
+
+    saveName= name[:-4]+"fl.jpg"
+    saveImage=flip(imageDir,name)
+    saveImage.save(os.path.join(saveDir,saveName))
+
+    saveName= name[:-4]+"ro.jpg"
+    saveImage=rotation(imageDir,name)
+    saveImage.save(os.path.join(saveDir,saveName))
+```
+
+
+
 ### 模型调整&运行
+
+以下调整均为基于`microsoft/Swin-Transformer`库的调整，在`Swin-Transformer-pbcn2.zip`中均已完成修改。
 
 #### 获取代码和预训练模型
 
@@ -332,6 +426,10 @@ if checkpoint['model']['head.weight'].shape[0] == 1000:
 ```
 python main.py --cfg configs/swin_tiny_patch4_window7_224.yaml --local_rank 0 --batch-size 16
 ```
+
+
+
+
 
 ### 推理
 
@@ -451,6 +549,10 @@ overall_accuracy = total_correct / total * 100
 print(f"Overall Accuracy: {overall_accuracy:.2f}%")
 ```
 
+
+
+
+
 ### 可视化
 
 这部分调用了GradCAM库，将注意力具象化为热力图叠加在原始图像上，具体思路如下
@@ -544,7 +646,123 @@ for image_path, class_id in zip(image_paths, class_ids):
     cv2.imwrite("cam_image.jpg", visualization)
 ```
 
-## 结果展示
+
+
+
+
+## 可视化效果展示-类激活热力图
+
+以下图片均在`BatchSize = 32; epoch = 300`的情况下生成。
+
+![](E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\bs32-e300.png)
+
+类激活热力图：用于检查图像哪一部分对模型的最终输出有更大的贡献。具体某个类别对应到图片的那个区域响应最大，也就是对该类别的识别贡献最大。
+
+这部分使用pytorch-grad-cam库帮助实现：https://github.com/jacobgil/pytorch-grad-cam
+
+可视化部分关键的就是要从模型中抽取层进行可视化，关键代码如下：
+
+```python
+target_layer = [model.layers[-1].blocks[-1].norm1]
+```
+
+![](E:\001CV\2023-EXP-CV-PlantPathology2021ClassificationTasks\imgs_for_README\total.png)
+
+![](E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\imgs_for_README\new_total.png)
+
+在 Swin Transformer 中，一个 `BasicLayer` 包含多个 `SwinTransformerBlock` 实例。每个 `SwinTransformerBlock`<font color=purple>（上图最右侧的两个block）</font> 通常包含以下几个主要部分：
+
+1. **LayerNorm (`norm1`)**：第一个规范化层。
+2. **Window Attention (`attn`)**：这是 Swin Transformer 的核心，窗口内的自注意力机制。
+3. **LayerNorm (`norm2`)**：第二个规范化层。
+4. **MLP**：多层感知器，通常包含两个全连接层。
+
+在 Swin Transformer 的设计中，有一个重要的特性是**窗口切换**（window shifting）。这种设计在连续的 `SwinTransformerBlock` 之间交替进行。具体来说：
+
+- 第一个 `SwinTransformerBlock`（例如 `model.layers[-1].blocks[-2]`）进行标准的窗口注意力操作，其中每个窗口内的像素/特征只与同一窗口内的其他像素/特征进行自注意力计算。
+- 紧随其后的第二个 `SwinTransformerBlock`（例如 `model.layers[-1].blocks[-1]`）则进行窗口切换。在这个阶段，窗口会在空间上稍微移动，这样之前不在同一窗口中的像素/特征点就可以进行交互。
+
+这种窗口切换策略的目的是为了允许不同窗口间的信息交流，增加模型的表示能力，同时避免了标准自注意力机制的高计算成本。
+
+因此，当选择 `model.layers[-1].blocks[-1].norm1` 与 `model.layers[-1].blocks[-2].norm1` 作为目标层时，实际上是在选择两个相邻的 `SwinTransformerBlock` 中的第一个规范化层。这两个块在窗口注意力机制的执行方式上有所不同，一个是标准窗口注意力，另一个是进行了窗口切换的窗口注意力。
+
+### `layers[-1].blocks[-1].norm2`（最后一层）注意力可视化
+
+通过对最后一层最后一个模块注意力的可视化，我们可以清楚的看到在处理不同的类型时候，模型都能够很好的将注意力集中在关键的区域。
+
+<img src="E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\visual\output1.png" style="zoom: 67%;" />
+
+<img src="E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\visual\output2.png" style="zoom:67%;" />
+
+<img src="E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\visual\output3.png" style="zoom:67%;" />
+
+<img src="E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\visual\output4.png" style="zoom:67%;" />
+
+
+
+### `blocks[-1].norm2`与`blocks[-2].norm2`对比
+
+`blocks[-1].norm2`与`blocks[-2].norm2`的区别在于block[-2]是仅仅经过了W-MSA，而block[-1]是经过了SW-MSA的结果，即为对window进行了一次swin操作。使得原本相邻的元素，却因为处于不同的window，导致相关性不强的问题得到了显著的改善。因此注意力计算也会更加精准。
+
+![](E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\imgs_for_README\45af6be96759d7960c079fda5de60099.png)
+
+可以通过下面三幅图片看出，经过一次swin可以使得注意力显著集中于关键位置，效果十分明显。
+
+<img src="E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\visual\output5.png" style="zoom:80%;" />
+
+<img src="E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\visual\output6.png" style="zoom:80%;" />
+
+<img src="E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\visual\output7.png" style="zoom:80%;" />
+
+
+
+### `blocks[-1].norm2`与`blocks[-2].norm1`对比
+
+通过观察下图结构，整个系统是由一个一个stage构成的，每个stage的结构都相似，因此分析每个stage对注意力的改善的效果相当重要。
+
+stage3的输出层应该是`layer[-2].blocks[-1].norm2`，但是由于大小的问题导致显示不出来热力图得考虑别的办法。因为`Patch Merging`只是对张量的大小进行调节，没有改变`attention`，所以使用`layer[-1].blocks[-2].norm1`进行替代。
+
+`blocks[-1].norm2`与`blocks[-2].norm1`的对比，实际上就是两个`stage`之间的对比，通过对比两幅图可以看出一个完整的`stage`对Attention的聚集状态的改善。
+
+![](E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\imgs_for_README\new_total.png)
+
+经过以下三个图片可以看出，一轮`stage`会对Attention的聚集状态产生显著改善，能够有效帮助模型识别出KeyPoint。
+
+<img src="E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\visual\output8.png" style="zoom:80%;" />
+
+<img src="E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\visual\output9.png" style="zoom:80%;" />
+
+<img src="E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\visual\output10.png" style="zoom:80%;" />
+
+
+
+### Attention随epoch增加而聚集
+
+`Batch Size = 32` `epoch = 5`
+
+![](E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\bs32-e5.png)
+
+`Batch Size = 32` `epoch = 10`
+
+![](E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\bs32-e10.png)
+
+下面三张图片是展示了随着epoch的增加，模型的Attention逐渐focus到关键点上面去，并且无关信息的注意力逐渐降低。
+
+值得注意的是，在10个epoch之内注意力就能够明显聚集于关键点上。特别是第三幅图，当有两个关键点的时候，系统也能够focus到两个关键点上面。
+
+和上面的准确度相对应，因为注意力的精准，所以在epoch=5的情况下就能够实现69%的准确度，在epoch=10的情况下就能够实现76%的准确度，模型收敛速度相当快。
+
+![](E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\visual\output11.png)
+
+![](E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\visual\output12.png)
+
+![](result_img/visual/output13.png)
+
+
+
+
+
+## 准确度展示
 
 首先对超参数BatchSize进行调参，在`epoch = 100`的情况下测试了从8-128的各值，结果如下：
 
@@ -572,84 +790,7 @@ for image_path, class_id in zip(image_paths, class_ids):
 
 综合考虑以上情况和准确度，选择`B_S = 32`进行后续的分析。
 
-
-
-## 可视化-类激活热力图
-
-以下图片均在`BatchSize = 32; epoch = 300`的情况下生成。
+进一步进行训练，当epoch = 300的时候，准确度还是83.98%，因此可以据此判断模型已经收敛。
 
 ![](E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\bs32-e300.png)
-
-类激活热力图：用于检查图像哪一部分对模型的最终输出有更大的贡献。具体某个类别对应到图片的那个区域响应最大，也就是对该类别的识别贡献最大。
-
-这部分使用pytorch-grad-cam库帮助实现：https://github.com/jacobgil/pytorch-grad-cam
-
-可视化部分关键的就是要从模型中抽取层进行可视化，关键代码如下：
-
-```python
-target_layer = [model.layers[-1].blocks[-1].norm1]
-target_layer = [model.layers[-1].blocks[-2].norm1]
-```
-
-![](E:\001CV\2023-EXP-CV-PlantPathology2021ClassificationTasks\imgs_for_README\total.png)
-
-![](E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\imgs_for_README\new_total.png)
-
-在 Swin Transformer 中，一个 `BasicLayer` 包含多个 `SwinTransformerBlock` 实例。每个 `SwinTransformerBlock`<font color=purple>（上图最右侧的两个block）</font> 通常包含以下几个主要部分：
-
-1. **LayerNorm (`norm1`)**：第一个规范化层。
-2. **Window Attention (`attn`)**：这是 Swin Transformer 的核心，窗口内的自注意力机制。
-3. **LayerNorm (`norm2`)**：第二个规范化层。
-4. **MLP**：多层感知器，通常包含两个全连接层。
-
-在 Swin Transformer 的设计中，有一个重要的特性是**窗口切换**（window shifting）。这种设计在连续的 `SwinTransformerBlock` 之间交替进行。具体来说：
-
-- 第一个 `SwinTransformerBlock`（例如 `model.layers[-1].blocks[-2]`）进行标准的窗口注意力操作，其中每个窗口内的像素/特征只与同一窗口内的其他像素/特征进行自注意力计算。
-- 紧随其后的第二个 `SwinTransformerBlock`（例如 `model.layers[-1].blocks[-1]`）则进行窗口切换。在这个阶段，窗口会在空间上稍微移动，这样之前不在同一窗口中的像素/特征点就可以进行交互。
-
-这种窗口切换策略的目的是为了允许不同窗口间的信息交流，增加模型的表示能力，同时避免了标准自注意力机制的高计算成本。
-
-因此，当选择 `model.layers[-1].blocks[-1].norm1` 与 `model.layers[-1].blocks[-2].norm1` 作为目标层时，实际上是在选择两个相邻的 `SwinTransformerBlock` 中的第一个规范化层。这两个块在窗口注意力机制的执行方式上有所不同，一个是标准窗口注意力，另一个是进行了窗口切换的窗口注意力。
-
-### `layers[-1].blocks[-1].norm2`（最后一层）注意力可视化
-
-<img src="E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\visual\output1.png" style="zoom: 67%;" />
-
-<img src="E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\visual\output2.png" style="zoom:67%;" />
-
-<img src="E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\visual\output3.png" style="zoom:67%;" />
-
-<img src="E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\visual\output4.png" style="zoom:67%;" />
-
-
-
-### `blocks[-1].norm2`与`blocks[-2].norm2`对比
-
-<img src="E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\visual\output5.png" style="zoom:80%;" />
-
-<img src="E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\visual\output6.png" style="zoom:80%;" />
-
-<img src="E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\visual\output7.png" style="zoom:80%;" />
-
-
-
-### `blocks[-1].norm2`与`blocks[-2].norm1`对比
-
-<img src="E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\visual\output8.png" style="zoom:80%;" />
-
-<img src="E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\visual\output9.png" style="zoom:80%;" />
-
-<img src="E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\visual\output10.png" style="zoom:80%;" />
-
-
-
-### Attention随epoch增加而精进
-
-![](E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\visual\output11.png)
-
-![](E:\001cv\2023-EXP-CV-PlantPathology2021ClassificationTasks\result_img\visual\output12.png)
-
-
-
-
 
