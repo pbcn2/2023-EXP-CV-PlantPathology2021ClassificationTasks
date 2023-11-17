@@ -114,7 +114,7 @@ python visual.py
 
 [TypeError: __init__() got an unexpected keyword argument 'target_layer' · Issue #176 · jacobgil/pytorch-grad-cam · GitHub](https://github.com/jacobgil/pytorch-grad-cam/issues/176)
 
-[Bug\]vis_cam.py类别激活图可视化时报一个错 TypeError: __call__() got an unexpected keyword argument 'target_category' · Issue #654 · open-mmlab/mmpretrain · GitHub](https://github.com/open-mmlab/mmpretrain/issues/654)
+[Bug/]vis_cam.py类别激活图可视化时报一个错 TypeError: __call__() got an unexpected keyword argument 'target_category' · Issue #654 · open-mmlab/mmpretrain · GitHub](https://github.com/open-mmlab/mmpretrain/issues/654)
 
 ## Swin Transformer 介绍
 
@@ -128,7 +128,7 @@ Swin Transformer是2021年微软研究院发表在ICCV上的一篇文章，问�
 
 Swin Transformer的思想比较容易理解，如下图所示，ViT(Vision Transformer)的思想是将图片分成16x16大小的patch，每个patch进行注意力机制的计算。而Swin Transformer并不是将所有的图片分成16x16大小的patch，有16x16的，有8x8的，有4x4的。每一个patch作为一个单独的窗口，每一个窗口不再和其它窗口直接计算注意力，而是在自己内部计算注意力，这样就大幅减小了计算量。
 
-![](imgs_for_README\vit.png)
+![](imgs_for_README/vit.png)
 
 为了弥补不同窗口之间的信息传递，Swin Transformer又提出了移动窗口(Shifted Window)的概念(Swin)
 
@@ -136,7 +136,7 @@ Swin Transformer的思想比较容易理解，如下图所示，ViT(Vision Trans
 
 #### 整体架构
 
-![](E:\001CV\2023-EXP-CV-PlantPathology2021ClassificationTasks\imgs_for_README\total.png)
+![](E:/001CV/2023-EXP-CV-PlantPathology2021ClassificationTasks/imgs_for_README/total.png)
 
 #### Patch Partion
 
@@ -158,13 +158,13 @@ W-MSA模块就是将特征图划分到一个个窗口(Windows)中，在每个窗
 
 代码中的这个模块相较于ViT不加窗口计算全局注意力的MSA，在计算的时间复杂度上面有显著优势，能够大大节省训练时间。原理如图，在此不再赘述。
 
-![](imgs_for_README\屏幕截图 2023-11-13 235229.png)
+![](imgs_for_README/屏幕截图 2023-11-13 235229.png)
 
 #### <font color=red>SW-MSA</font>
 
 SW-MSA主要是为了让窗口与窗口之间可以发生信息传输。论文中给出了这样一幅图来描述SW-MSA。
 
-![](imgs_for_README\45af6be96759d7960c079fda5de60099.png)
+![](imgs_for_README/45af6be96759d7960c079fda5de60099.png)
 
 表面上看从4个窗口变成了9个窗口，实际上是整个窗口网格从左上角分别向右侧和下方各偏移了M/2个像素（将windows进行半个窗口的循环移位）。但是这样又产生了一个新的问题，那就是每个窗口大小不一样，不利于计算。
 
@@ -172,11 +172,11 @@ SW-MSA主要是为了让窗口与窗口之间可以发生信息传输。论文�
 
 以上过程使用torch.roll实现
 
-![](imgs_for_README\de89fb1d06167214c4dae5b06fe71488.png)
+![](imgs_for_README/de89fb1d06167214c4dae5b06fe71488.png)
 
 在相同的窗口中计算自注意力，计算结果如下右图所示，window0的结构保存，但是针对window2的计算，其中3与3、6与6的计算生成了attn mask 中window2中的黄色区域，针对windows2中3与6、6与3之间不应该计算自注意力（attn mask中window2的蓝色区域），将蓝色区域mask赋值为-100，经过softmax之后，起作用可以忽略不计。同理window1与window3的计算一致。
 
-![](imgs_for_README\v2-3092a33bdb8a2d6b096f6f7b40ec3b13_720w.jpg)
+![](imgs_for_README/v2-3092a33bdb8a2d6b096f6f7b40ec3b13_720w.jpg)
 
 最后再进行循环移位，恢复原来的位置。
 
@@ -184,7 +184,7 @@ SW-MSA主要是为了让窗口与窗口之间可以发生信息传输。论文�
 
 第一个Stage结束之后，后面3个Stage的结构完全一样。和第一个Stage不同的是，后面几个Stage均多了一个Patch Merging的操作。 Patch Merging的操作不难理解，首先是将一个矩阵按间隔提取出四个小矩阵，然后将这四个矩阵在第三通道上进行Concat，在进行LayerNorm之后，通过一个线性层映射成2个通道。这样，通过Patch Merging操作之后的特征图长宽分别减半，通道数翻倍。
 
-![](imgs_for_README\bfb1da893466833bcbe0dd8a9d7f7ba8.png)
+![](imgs_for_README/bfb1da893466833bcbe0dd8a9d7f7ba8.png)
 
 ## 项目代码解析
 
@@ -229,21 +229,21 @@ I:.
 |   +---010000
 |   +---100000
 |   +---000100
-|   \---000010
+|   /---000010
 +---val
 |   +---001000
 |   +---000010
 |   +---000001
 |   +---010000
 |   +---000100
-|   \---100000
-\---test
+|   /---100000
+/---test
     +---000100
     +---100000
     +---000001
     +---001000
     +---010000
-    \---000010
+    /---000010
 ```
 
 #### OneHot
@@ -360,7 +360,7 @@ git clone https://github.com/microsoft/Swin-Transformer
 
 在`get_start.md`文件中找到预训练模型，下载。这里我们选择下载Swin-Tiny类型的
 
-![](imgs_for_README\run1.png)
+![](imgs_for_README/run1.png)
 
 #### 修改config.py文件
 
@@ -394,13 +394,13 @@ _C.MODEL.NUM_CLASSES  # 模型的类别，默认是1000，按照数据集的类�
 
 将`nb_classes =1000`改为`nb_classes = config.MODEL.NUM_CLASSES`
 
-![](imgs_for_README\run2.png)
+![](imgs_for_README/run2.png)
 
 #### 修改utils.py
 
 由于类别默认是1000，所以加载模型的时候会出现类别对不上的问题，所以需要修改load_checkpoint方法。在加载预训练模型之前增加修改预训练模型的方法：
 
-![](imgs_for_README\run3.png)
+![](imgs_for_README/run3.png)
 
 在图片中对应位置添加：
 
@@ -415,11 +415,11 @@ if checkpoint['model']['head.weight'].shape[0] == 1000:
 
 将92-94注释，如下图：
 
-![](imgs_for_README\run4.png)
+![](imgs_for_README/run4.png)
 
 将312行修改为：torch.distributed.init_process_group('gloo', init_method='file://tmp/somefile', rank=0, world_size=1)
 
-![](imgs_for_README\run5.png)
+![](imgs_for_README/run5.png)
 
 #### 运行预训练模型
 
@@ -654,7 +654,7 @@ for image_path, class_id in zip(image_paths, class_ids):
 
 以下图片均在`BatchSize = 32; epoch = 300`的情况下生成。
 
-![](result_img\bs32-e300.png)
+![](result_img/bs32-e300.png)
 
 类激活热力图：用于检查图像哪一部分对模型的最终输出有更大的贡献。具体某个类别对应到图片的那个区域响应最大，也就是对该类别的识别贡献最大。
 
@@ -666,9 +666,9 @@ for image_path, class_id in zip(image_paths, class_ids):
 target_layer = [model.layers[-1].blocks[-1].norm1]
 ```
 
-![](imgs_for_README\total.png)
+![](imgs_for_README/total.png)
 
-![](imgs_for_README\new_total.png)
+![](imgs_for_README/new_total.png)
 
 在 Swin Transformer 中，一个 `BasicLayer` 包含多个 `SwinTransformerBlock` 实例。每个 `SwinTransformerBlock`<font color=purple>（上图最右侧的两个block）</font> 通常包含以下几个主要部分：
 
@@ -690,13 +690,13 @@ target_layer = [model.layers[-1].blocks[-1].norm1]
 
 通过对最后一层最后一个模块注意力的可视化，我们可以清楚的看到在处理不同的类型时候，模型都能够很好的将注意力集中在关键的区域。
 
-<img src="result_img\visual\output1.png" style="zoom: 67%;" />
+<img src="result_img/visual/output1.png" style="zoom: 67%;" />
 
-<img src="result_img\visual\output2.png" style="zoom:67%;" />
+<img src="result_img/visual/output2.png" style="zoom:67%;" />
 
-<img src="result_img\visual\output3.png" style="zoom:67%;" />
+<img src="result_img/visual/output3.png" style="zoom:67%;" />
 
-<img src="result_img\visual\output4.png" style="zoom:67%;" />
+<img src="result_img/visual/output4.png" style="zoom:67%;" />
 
 
 
@@ -704,15 +704,15 @@ target_layer = [model.layers[-1].blocks[-1].norm1]
 
 `blocks[-1].norm2`与`blocks[-2].norm2`的区别在于block[-2]是仅仅经过了W-MSA，而block[-1]是经过了SW-MSA的结果，即为对window进行了一次swin操作。使得原本相邻的元素，却因为处于不同的window，导致相关性不强的问题得到了显著的改善。因此注意力计算也会更加精准。
 
-![](imgs_for_README\45af6be96759d7960c079fda5de60099.png)
+![](imgs_for_README/45af6be96759d7960c079fda5de60099.png)
 
 可以通过下面三幅图片看出，经过一次swin可以使得注意力显著集中于关键位置，效果十分明显。
 
-<img src="result_img\visual\output5.png" style="zoom:80%;" />
+<img src="result_img/visual/output5.png" style="zoom:80%;" />
 
-<img src="result_img\visual\output6.png" style="zoom:80%;" />
+<img src="result_img/visual/output6.png" style="zoom:80%;" />
 
-<img src="result_img\visual\output7.png" style="zoom:80%;" />
+<img src="result_img/visual/output7.png" style="zoom:80%;" />
 
 
 
@@ -724,15 +724,15 @@ stage3的输出层应该是`layer[-2].blocks[-1].norm2`，但是由于大小的�
 
 `blocks[-1].norm2`与`blocks[-2].norm1`的对比，实际上就是两个`stage`之间的对比，通过对比两幅图可以看出一个完整的`stage`对Attention的聚集状态的改善。
 
-![](imgs_for_README\new_total.png)
+![](imgs_for_README/new_total.png)
 
 经过以下三个图片可以看出，一轮`stage`会对Attention的聚集状态产生显著改善，能够有效帮助模型识别出KeyPoint。
 
-<img src="result_img\visual\output8.png" style="zoom:80%;" />
+<img src="result_img/visual/output8.png" style="zoom:80%;" />
 
-<img src="result_img\visual\output9.png" style="zoom:80%;" />
+<img src="result_img/visual/output9.png" style="zoom:80%;" />
 
-<img src="result_img\visual\output10.png" style="zoom:80%;" />
+<img src="result_img/visual/output10.png" style="zoom:80%;" />
 
 
 
@@ -740,11 +740,11 @@ stage3的输出层应该是`layer[-2].blocks[-1].norm2`，但是由于大小的�
 
 `Batch Size = 32` `epoch = 5`
 
-![](result_img\bs32-e5.png)
+![](result_img/bs32-e5.png)
 
 `Batch Size = 32` `epoch = 10`
 
-![](result_img\bs32-e10.png)
+![](result_img/bs32-e10.png)
 
 下面三张图片是展示了随着epoch的增加，模型的Attention逐渐focus到关键点上面去，并且无关信息的注意力逐渐降低。
 
@@ -752,9 +752,9 @@ stage3的输出层应该是`layer[-2].blocks[-1].norm2`，但是由于大小的�
 
 和上面的准确度相对应，因为注意力的精准，所以在epoch=5的情况下就能够实现69%的准确度，在epoch=10的情况下就能够实现76%的准确度，模型收敛速度相当快。
 
-![](result_img\visual\output11.png)
+![](result_img/visual/output11.png)
 
-![](result_img\visual\output12.png)
+![](result_img/visual/output12.png)
 
 ![](result_img/visual/output13.png)
 
@@ -768,23 +768,23 @@ stage3的输出层应该是`layer[-2].blocks[-1].norm2`，但是由于大小的�
 
 #### `B_S = 8`
 
-![](result_img\bs8-e99.png)
+![](result_img/bs8-e99.png)
 
 #### `B_S = 16`
 
-![](result_img\bs16-e99.png)
+![](result_img/bs16-e99.png)
 
 #### `B_S = 32`
 
-![](result_img\bs32-e99.png)
+![](result_img/bs32-e99.png)
 
 #### `B_S = 64`
 
-![](result_img\bs64-e99.png)
+![](result_img/bs64-e99.png)
 
 #### `B_S = 128`
 
-![](result_img\bs128-e99.png)
+![](result_img/bs128-e99.png)
 
 增大BatchSize会使得显存的使用量明显增加，在`B_S = 64`以上的情况，显存的使用量已经在12GB以上了；较小的`B_S`可能能够帮助程序跳出局部最优解达到sota；较大的B_S的训练速度较快
 
@@ -792,5 +792,5 @@ stage3的输出层应该是`layer[-2].blocks[-1].norm2`，但是由于大小的�
 
 进一步进行训练，当epoch = 300的时候，准确度还是83.98%，因此可以据此判断模型已经收敛。
 
-![](result_img\bs32-e300.png)
+![](result_img/bs32-e300.png)
 
