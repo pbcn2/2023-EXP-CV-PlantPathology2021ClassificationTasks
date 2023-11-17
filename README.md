@@ -784,7 +784,7 @@ stage3的输出层应该是`layer[-2].blocks[-1].norm2`，但是由于大小的�
 
 #### `B_S = 128`
 
-![](result_img\bs128-e99.png)
+![](result_img/bs128-e99.png)
 
 增大BatchSize会使得显存的使用量明显增加，在`B_S = 64`以上的情况，显存的使用量已经在12GB以上了；较小的`B_S`可能能够帮助程序跳出局部最优解达到sota；较大的B_S的训练速度较快
 
