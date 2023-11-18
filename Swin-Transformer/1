@@ -1,0 +1,6 @@
+python main.py --cfg configs/swin_tiny_patch4_window7_224.yaml --local_rank 0 --b
+atch-size 16
+
+
+python  main.py --eval --cfg configs/swin_tiny_patch4_window7_224.yaml --resume ./output/swin_tiny_patch4_window7_224/default/ckpt_epoc
+h_1.pth --data-path dataset --local_rank 0

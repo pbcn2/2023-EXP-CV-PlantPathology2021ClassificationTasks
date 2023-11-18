@@ -1,6 +1,11 @@
 # 2023-EXP-CV-PlantPathology2021ClassificationTasks
 
+数据集及模型文件详见
 
+```
+链接：https://pan.baidu.com/s/1dT7MWf7VuOkymX_s89_jWQ?pwd=51w0 
+提取码：51w0 
+```
 
 ## 环境配置
 
