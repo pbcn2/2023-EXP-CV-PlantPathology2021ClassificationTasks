@@ -438,6 +438,10 @@ python main.py --cfg configs/swin_tiny_patch4_window7_224.yaml --local_rank 0 --
 
 ### 推理
 
+```
+test.py
+```
+
 这个项目原来没有推理脚本，我自己写了一个
 
 #### 导入包和配置参数
@@ -559,6 +563,10 @@ print(f"Overall Accuracy: {overall_accuracy:.2f}%")
 
 
 ### 可视化
+
+```
+visual.py
+```
 
 这部分调用了GradCAM库，将注意力具象化为热力图叠加在原始图像上，具体思路如下
 
